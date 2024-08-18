@@ -1,0 +1,25 @@
+name: conversion_test
+
+csv_file_paths:
+  file_1: ../data/synced_data/X2_SRA_A_07-05-2024_10-39-10-mod-sync.csv
+  file_2: ../data/synced_data/X2_SRA_B_07-05-2024_10-41-46-mod-sync.csv
+
+episode_stats:
+  train:
+    start:
+      - 164041
+      - 454139
+    end:
+      - 367374
+      - 654139
+  test:
+    start:
+      - 696306
+    end:
+      - 894640
+
+obs_horizon: 10
+pred_horizon: 20
+decimation_factor: 5
+
+output_path: ../data/converted/${task.data_conversion.name}
