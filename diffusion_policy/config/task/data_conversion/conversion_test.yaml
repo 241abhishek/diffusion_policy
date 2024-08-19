@@ -22,4 +22,4 @@ obs_horizon: 10
 pred_horizon: 20
 decimation_factor: 5
 
-output_path: ../data/converted/${task.data_conversion.name}
+output_path: ../data/converted/converted_data

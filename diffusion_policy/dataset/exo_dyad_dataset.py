@@ -15,7 +15,7 @@ class ExoDyadLowdimDataset(BaseLowdimDataset):
             horizon=1,
             pad_before=0,
             pad_after=0,
-            obs_key='keypoint',
+            obs_key='low_dim_obs',
             action_key='action',
             seed=42,
             val_ratio=0.0,
