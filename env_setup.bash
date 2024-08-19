@@ -1,13 +1,3 @@
-# export env_dir=$1
-
-# if [ -z "${env_dir}" ]
-# then
-#     echo "Error: target directory must be provided."
-#     exit
-# fi
-
-# python3 -m venv ${env_dir}
-# source ${env_dir}/bin/activate
 pip install pip==22.2.2
 pip install ipykernel==6.16
 pip install jinja2
@@ -54,5 +44,3 @@ pip install pynput==1.7.6
 # pip install pyrealsense2==2.51.1.4348
 # pip install spnav@https://github.com/cheng-chi/spnav/archive/c1c938ebe3cc542db4685e0d13850ff1abfdb943.tar.gz
 pip install atomics==1.0.2
-
-# touch ${env_dir}/COLCON_IGNORE
