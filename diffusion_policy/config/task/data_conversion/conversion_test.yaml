@@ -5,19 +5,14 @@ csv_file_paths:
   file_2: ../data/synced_data/X2_SRA_B_07-05-2024_10-41-46-mod-sync.csv
 
 episode_stats:
-  train:
-    start:
-      - 164041
-      - 454139
-    end:
-      - 367374
-      - 654139
-  test:
-    start:
-      - 696306
-    end:
-      - 894640
-
+  start:
+    - 164041
+    - 454139
+    - 696306
+  end:
+    - 367374
+    - 654139
+    - 894640
 obs_horizon: 10
 pred_horizon: 20
 decimation_factor: 5

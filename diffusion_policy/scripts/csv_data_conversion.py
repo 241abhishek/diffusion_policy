@@ -47,7 +47,7 @@ def load_and_combine_data(csv_file_paths: dict, episode_stats: dict[str, list], 
     chunks = []
     episode_lengths = []
 
-    for start, end in zip(episode_stats['train']['start'], episode_stats['train']['end']):
+    for start, end in zip(episode_stats['start'], episode_stats['end']):
         # load the required chunk of data and apply decimation in one step
         # remove first row (header) and 1st column (time)
         chunk_1 = pd.read_csv(csv_file_paths["file_1"],
