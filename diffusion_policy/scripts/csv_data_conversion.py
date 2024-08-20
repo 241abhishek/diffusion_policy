@@ -30,6 +30,23 @@ def main(config):
     zarr_path = str(output_dir.joinpath(output_dir.name + '.zarr').absolute())
     replay_buffer = ReplayBuffer.create_from_path(zarr_path=zarr_path, mode='w')
 
+    # convert the data into a dictionary format expected by ReplayBuffer add_episode method
+    # loop over episodes and add them to the replay buffer in observation-action pairs
+    start = 0
+    for length in episode_lengths:
+        end = start + length
+        # initialize the dictionary for the episode
+        episode = {
+            "observation": data.iloc[start:end, :].values,
+            "action": data.iloc[start:end, 4:].values
+        }
+
+        # add the episode to the replay buffer
+        replay_buffer.add_episode(episode)
+        start = end
+
+    print(f"Converted {replay_buffer.n_episodes} episodes to zarr format successfully and saved to {zarr_path}")
+
 def load_and_combine_data(csv_file_paths: dict, episode_stats: dict[str, list], decimation_factor: int=1):
     """
     Load csv files from the given paths and combine them into a single dataframe.
