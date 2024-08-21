@@ -1,0 +1,27 @@
+defaults:
+  - _self_
+  - data_conversion: conversion_test
+
+name: exo_dyad_lowdim
+
+dataset_path: ../data/converted/${task.data_conversion.name}
+
+# Shapes must match the "data" conversion config file
+obs_dim: 8
+action_dim: 4 
+keypoint_dim: 0
+
+env_runner:
+  _target_: diffusion_policy.env_runner.exo_dyad_lowdim_runner.ExoDyadLowdimRunner
+
+dataset:
+  _target_: diffusion_policy.dataset.exo_dyad_lowdim_dataset.ExoDyadLowdimDataset
+  dataset_path: ${task.dataset_path}
+  horizon: ${horizon}
+  pad_before: ${eval:'${n_obs_steps}-1+${n_latency_steps}'}
+  pad_after: ${eval:'${n_action_steps}-1'}
+  n_obs_steps: ${n_obs_steps}
+  n_latency_steps: ${n_latency_steps}
+  seed: 42
+  val_ratio: 0.02
+  max_train_episodes: null

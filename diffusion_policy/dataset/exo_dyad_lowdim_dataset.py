@@ -9,21 +9,27 @@ from diffusion_policy.common.sampler import (
 from diffusion_policy.model.common.normalizer import LinearNormalizer
 from diffusion_policy.dataset.base_dataset import BaseLowdimDataset
 
+import logging as logger
+import pathlib
 class ExoDyadLowdimDataset(BaseLowdimDataset):
     def __init__(self, 
-            zarr_path, 
+            dataset_path: str, 
             horizon=1,
             pad_before=0,
             pad_after=0,
-            obs_key='low_dim_obs',
+            obs_key='observation',
             action_key='action',
+            n_obs_steps=None,
+            n_latency_steps=0,
             seed=42,
             val_ratio=0.0,
             max_train_episodes=None
             ):
         super().__init__()
+        dataset_path = pathlib.Path(dataset_path).absolute()
+        dataset_path = dataset_path.joinpath(dataset_path.name + '.zarr')
         self.replay_buffer = ReplayBuffer.copy_from_path(
-            zarr_path, keys=[obs_key, action_key])
+            dataset_path, keys=[obs_key, action_key])
         
         val_mask = get_val_mask(
             n_episodes=self.replay_buffer.n_episodes, 

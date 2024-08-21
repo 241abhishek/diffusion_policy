@@ -13,8 +13,7 @@ episode_stats:
     - 367374
     - 654139
     - 894640
-obs_horizon: 10
-pred_horizon: 20
+
 decimation_factor: 5
 
-output_path: ../data/converted/converted_data
+output_path: ../data/converted/${name}
