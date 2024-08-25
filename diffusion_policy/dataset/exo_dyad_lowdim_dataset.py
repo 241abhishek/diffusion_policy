@@ -9,7 +9,7 @@ from diffusion_policy.common.sampler import (
 from diffusion_policy.model.common.normalizer import LinearNormalizer
 from diffusion_policy.dataset.base_dataset import BaseLowdimDataset
 
-import logging as logger
+import logging
 import pathlib
 class ExoDyadLowdimDataset(BaseLowdimDataset):
     def __init__(self, 
@@ -35,6 +35,8 @@ class ExoDyadLowdimDataset(BaseLowdimDataset):
             n_episodes=self.replay_buffer.n_episodes, 
             val_ratio=val_ratio,
             seed=seed)
+        # log the val mask
+        logging.info(f"Validation mask: {val_mask}")
         train_mask = ~val_mask
         train_mask = downsample_mask(
             mask=train_mask, 

@@ -19,6 +19,7 @@ import random
 import wandb
 import tqdm
 import shutil
+import logging
 
 from diffusion_policy.common.pytorch_util import dict_apply, optimizer_to
 from diffusion_policy.workspace.base_workspace import BaseWorkspace
@@ -38,6 +39,8 @@ class TrainDiffusionUnetLowdimWorkspace(BaseWorkspace):
 
     def __init__(self, cfg: OmegaConf, output_dir=None):
         super().__init__(cfg, output_dir=output_dir)
+        
+        print(f"Output directory: {self.output_dir}")
 
         # set seed
         seed = cfg.training.seed
@@ -69,6 +72,10 @@ class TrainDiffusionUnetLowdimWorkspace(BaseWorkspace):
             if lastest_ckpt_path.is_file():
                 print(f"Resuming from checkpoint {lastest_ckpt_path}")
                 self.load_checkpoint(path=lastest_ckpt_path)
+            else:
+                print(f"Checkpoint {lastest_ckpt_path} not found")
+        else:
+            print("Starting new training run")
 
         # configure dataset
         dataset: BaseLowdimDataset
@@ -80,6 +87,9 @@ class TrainDiffusionUnetLowdimWorkspace(BaseWorkspace):
         # configure validation dataset
         val_dataset = dataset.get_validation_dataset()
         val_dataloader = DataLoader(val_dataset, **cfg.val_dataloader)
+
+        print(f"Training dataset: {len(train_dataloader)} batches")
+        print(f"Validation dataset: {len(val_dataloader)} batches")
 
         self.model.set_normalizer(normalizer)
         if cfg.training.use_ema:
@@ -141,9 +151,10 @@ class TrainDiffusionUnetLowdimWorkspace(BaseWorkspace):
         train_sampling_batch = None
 
         if cfg.training.debug:
-            cfg.training.num_epochs = 2
-            cfg.training.max_train_steps = 3
-            cfg.training.max_val_steps = 3
+            print("Running in debug mode")
+            cfg.training.num_epochs = 4
+            # cfg.training.max_train_steps = 3
+            # cfg.training.max_val_steps = 3
             cfg.training.rollout_every = 1
             cfg.training.checkpoint_every = 1
             cfg.training.val_every = 1
@@ -265,17 +276,22 @@ class TrainDiffusionUnetLowdimWorkspace(BaseWorkspace):
                 
                 # checkpoint
                 if (self.epoch % cfg.training.checkpoint_every) == 0:
+                    print(f"Saving checkpoint at epoch {self.epoch}")
                     # checkpointing
                     if cfg.checkpoint.save_last_ckpt:
                         self.save_checkpoint()
                     if cfg.checkpoint.save_last_snapshot:
                         self.save_snapshot()
 
+                    print(f"Step log: {step_log}")
+
                     # sanitize metric names
                     metric_dict = dict()
                     for key, value in step_log.items():
                         new_key = key.replace('/', '_')
                         metric_dict[new_key] = value
+
+                    print(f"Metric dict: {metric_dict}")
                     
                     # We can't copy the last checkpoint here
                     # since save_checkpoint uses threads.
