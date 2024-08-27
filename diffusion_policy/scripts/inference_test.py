@@ -33,7 +33,8 @@ OmegaConf.register_new_resolver("eval", eval, replace=True)
 )
 def main(cfg: OmegaConf):
 
-    checkpoint_path = "/home/abhi2001/diff/241abhishek_diffusion_policy/data/outputs/2024.08.24/20.08.14_train_diffusion_unet_lowdim_exo_dyad_lowdim/checkpoints/epoch=0020-val_loss=0.013.ckpt"
+    # path to the checkpoint (replace with the path to the checkpoint you want to test)
+    checkpoint_path = "/home/cerebro/diff/diffusion_policy/data/epoch=0020-val_loss=0.013.ckpt"
     
     # resolve immediately so all the ${now:} resolvers
     OmegaConf.resolve(cfg)
@@ -87,25 +88,19 @@ def main(cfg: OmegaConf):
             end = time.time()
             time_list.append(end-start)
             pred_action = result['action'].squeeze(0)
-            # unnormalize the predicted action and the ground truth action
-            pred_action = normalizer['action'].unnormalize(pred_action)
-            gt_action = normalizer['action'].unnormalize(gt_action)
             obs_list.append(data['obs'][:100].numpy())
             actual_action_list.append(gt_action.numpy())
-            predicted_action_list.append(pred_action.numpy())
+            predicted_action_list.append(pred_action.to('cpu').numpy())
 
     # calculate the mean time taken to predict the action
     mean_time = sum(time_list)/len(time_list)
-    print(f"Mean time taken to predict the action: {mean_time}")
+    print(f"Time taken: {time_list}")
+    print(f"Mean time taken to predit the action: {mean_time}")
     
     # convert the observation, actual action, and predicted action lists from radians to degrees
     obs_list = np.array([np.rad2deg(obs) for obs in obs_list])
     actual_action_list = np.array([np.rad2deg(action) for action in actual_action_list])
     predicted_action_list = np.array([np.rad2deg(action) for action in predicted_action_list])
-
-    # print(f"Obs List Shape: {np.array(obs_list).shape}")
-    # print(f"Actual Action List Shape: {np.array(actual_action_list).shape}")
-    # print(f"Predicted Action List Shape: {np.array(predicted_action_list).shape}")
 
     # plot the actual actions against the predicted actions to visualize the performance of the model
     import matplotlib.pyplot as plt
