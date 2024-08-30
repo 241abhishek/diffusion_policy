@@ -13,14 +13,26 @@ def csv_publisher():
     
     rospy.on_shutdown(shutdown_hook)
 
+    start_row, end_row = 696306, 894640  
+
     try:
         with open('/home/cerebro/diff/data/synced_data/X2_SRA_A_07-05-2024_10-39-10-mod-sync.csv', 'r') as csvfile1, \
              open('/home/cerebro/diff/data/synced_data/X2_SRA_B_07-05-2024_10-41-46-mod-sync.csv', 'r') as csvfile2:
             csv_reader1 = csv.reader(csvfile1)
             csv_reader2 = csv.reader(csvfile2)
-            line_counter = 0
+            
+            # Skip rows before start_row
+            for _ in range(start_row):
+                next(csv_reader1, None)
+                next(csv_reader2, None)
+            
+            line_counter = start_row
             
             while not rospy.is_shutdown():
+                if end_row is not None and line_counter >= end_row:
+                    rospy.loginfo(f"Reached specified end row: {end_row}")
+                    break
+                
                 try:
                     row1 = next(csv_reader1)
                     row2 = next(csv_reader2)
@@ -28,15 +40,15 @@ def csv_publisher():
                     rospy.loginfo("Reached end of CSV files")
                     break
 
-                line_counter += 1
                 if line_counter % 5 == 0:
                     row1_data = ','.join(row1[1:])
                     row2_data = ','.join(row2[1:])
                     combined_data = row1_data + ',' + row2_data
                     msg = String(data=combined_data)
                     pub.publish(msg)
-                    # rospy.loginfo(f'Published: {msg.data}')
+                    # rospy.loginfo(f'Published row {line_counter}: {msg.data}')
                     rate.sleep()
+                line_counter += 1
     finally:
         rospy.loginfo("CSV publisher has finished")
 
