@@ -28,11 +28,14 @@ class ActionPredictor:
         rospy.init_node('action_predictor', anonymous=True)
 
         # Parameters
-        self.checkpoint_path = rospy.get_param('~checkpoint_path', '/home/cerebro/diff/src/diffusion_policy/data/epoch=0020-val_loss=0.013.ckpt')
+        self.checkpoint_path = rospy.get_param('checkpoint_path', '/home/cerebro/diff/src/diffusion_policy/data/epoch=0020-val_loss=0.013.ckpt')
 
-        self.num_inferences = rospy.get_param('~num_inferences', 100)
+        rospy.set_param('num_inferences', 100)
+        rospy.set_param('num_actions_taken', 100)
 
-        self.num_actions_taken = rospy.get_param('~num_actions_taken', 100)
+        self.num_inferences = rospy.get_param('num_inferences', 100)
+
+        self.num_actions_taken = rospy.get_param('num_actions_taken', 100)
 
         # Publishers
         self.action_pub = rospy.Publisher('action_topic', String, queue_size=10)
@@ -88,7 +91,6 @@ class ActionPredictor:
         if self.enable_inference:
             # log the data from the CSV topic
             rospy.loginfo(f"Received data: {data.data}")
-
 
     def start_inference(self, req):
         """Starts the inference process"""
