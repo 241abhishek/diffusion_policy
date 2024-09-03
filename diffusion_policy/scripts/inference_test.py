@@ -34,7 +34,7 @@ OmegaConf.register_new_resolver("eval", eval, replace=True)
 def main(cfg: OmegaConf):
 
     # path to the checkpoint (replace with the path to the checkpoint you want to test)
-    checkpoint_path = "/home/cerebro/diff/diffusion_policy/data/epoch=0020-val_loss=0.013.ckpt"
+    checkpoint_path = "/home/cerebro/diff/src/diffusion_policy/data/epoch=0020-val_loss=0.013.ckpt"
     
     # resolve immediately so all the ${now:} resolvers
     OmegaConf.resolve(cfg)
