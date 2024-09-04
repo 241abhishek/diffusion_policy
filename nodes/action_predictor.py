@@ -38,10 +38,11 @@ class ActionPredictor:
         self.num_actions_taken = rospy.get_param('num_actions_taken', 100)
 
         # Publishers
-        self.action_pub = rospy.Publisher('action_topic', String, queue_size=10)
+        self.patient_obs_pub = rospy.Publisher('patient_obs_topic', Float32MultiArray, queue_size=10)
+        self.true_action_pub = rospy.Publisher('true_action_topic', Float32MultiArray, queue_size=10)
 
         # Subscribers
-        rospy.Subscriber('csv_topic', Float32MultiArray, self.csv_callback)
+        rospy.Subscriber('csv_topic', Float32MultiArray, self.true_obs_callback)
 
         # Services
         self.srv_start_inference = rospy.Service('start_inference', std_srvs.srv.Trigger, self.start_inference)
@@ -85,12 +86,22 @@ class ActionPredictor:
 
         rospy.on_shutdown(shutdown_hook)
 
-    def csv_callback(self, data):
-        """Callback for CSV topic"""
+    def true_obs_callback(self, data):
+        """Callback for the true ground truth observation data"""
 
-        if self.enable_inference:
-            # log the data from the CSV topic
-            rospy.loginfo(f"Received data: {data.data}")
+        # parse the data and publish it on the appropriate topic
+
+        # first four elements are the patient observation
+        patient_obs = data.data[:4]
+        patient_obs_msg = Float32MultiArray(data=patient_obs)
+
+        # the rest of the elements are the true action
+        true_action = data.data[4:]
+        true_action_msg = Float32MultiArray(data=true_action)
+
+        # publish the messages
+        self.patient_obs_pub.publish(patient_obs_msg)
+        self.true_action_pub.publish(true_action_msg)
 
     def start_inference(self, req):
         """Starts the inference process"""
