@@ -17,10 +17,28 @@ import threading
 import yaml
 from enum import Enum, auto as enum_auto
 import time
+from collections import deque
 
 from diffusion_policy.workspace.base_workspace import BaseWorkspace
 from diffusion_policy.policy.base_image_policy import BaseImagePolicy
 from diffusion_policy.common.pytorch_util import dict_apply
+
+class FIFOQueue:
+    """FIFO queue with a maximum length for recording obs data"""
+    def __init__(self, max_len=100):
+        self.queue = deque(maxlen=max_len)
+
+    def push(self, item):
+        self.queue.append(item)
+
+    def size(self):
+        return len(self.queue)
+
+    def clear(self):
+        self.queue.clear() 
+
+    def to_numpy(self):
+        return np.array(self.queue)
 
 class ActionPredictor:
     """ROS node that predicts actions using Diffusion Policy"""
@@ -81,6 +99,13 @@ class ActionPredictor:
         if self.num_actions_taken > self.policy.n_action_steps:
             rospy.logwarn(f"num_actions_taken ({self.num_actions_taken}) is greater than n_action_steps ({self.policy.n_action_steps})")
 
+        # Initialize the FIFO queue for storing obs data
+        self.patient_obs_queue = FIFOQueue(max_len=self.policy.n_obs_steps)
+        self.action_obs_queue = FIFOQueue(max_len=self.policy.n_obs_steps)
+
+        # Flags
+        self.inference_executed = False
+        
         def shutdown_hook():
             rospy.loginfo("Shutting down action_predictor")
 
@@ -89,11 +114,21 @@ class ActionPredictor:
     def true_obs_callback(self, data):
         """Callback for the true ground truth observation data"""
 
-        # parse the data and publish it on the appropriate topic
-
+        # parse the data
         # first four elements are the patient observation
         patient_obs = data.data[:4]
         patient_obs_msg = Float32MultiArray(data=patient_obs)
+
+        # convert the patient observation to a numpy array
+        patient_obs_np = np.array(patient_obs)
+        # push the patient observation to the queue
+        self.patient_obs_queue.push(patient_obs_np)
+
+        # if an inference has not yet been executed, fill the action queue with the patient observation
+        # this is done to ensure that the observation set contains therapist action data when making the intial inferences
+        # after the initial inferences, the action queue will be filled with the predicted action data
+        if not self.inference_executed:
+            self.action_obs_queue.push(patient_obs_np)
 
         # the rest of the elements are the true action
         true_action = data.data[4:]
