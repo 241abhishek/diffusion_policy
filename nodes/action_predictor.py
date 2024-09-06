@@ -41,8 +41,8 @@ class FIFOQueue:
         return np.array(self.queue)
 
     def from_numpy(self, np_array):
+        self.clear() # clear the queue
         if isinstance(np_array, np.ndarray) and np_array.ndim == 2:
-            self.clear() # clear the queue before converting the numpy array to a queue
             for row in np_array:
                 self.push(row)
         else:
@@ -135,12 +135,15 @@ class ActionPredictor:
         self.latency_counter += 1
 
         if self.action_prediction_array.size > 0:
+
+            rospy.loginfo(f"Lantency counter: {self.latency_counter}")
             # remove the first latency_counter rows from the action_prediction_array
             # this is done to account for the delay in action prediction
             self.action_prediction_array = self.action_prediction_array[self.latency_counter:]
-
+            rospy.loginfo(f"Action prediction array shape: {self.action_prediction_array.shape}")
             # convert the action_prediction_array to a queue
             self.predicted_action_queue.from_numpy(self.action_prediction_array)
+            self.action_prediction_array = np.empty((0,4), dtype=np.float32) # reset the action_prediction_array
             
             # reset the latency counter
             self.latency_counter = 0
@@ -162,19 +165,26 @@ class ActionPredictor:
         # this is done to ensure that the observation set contains therapist action data when making the intial inferences
         # after the initial inferences, the action queue will be filled with the predicted action data
         if not self.inference_executed:
-            self.action_obs_queue.push(patient_obs_np)
+            # self.action_obs_queue.push(patient_obs_np)
+            pass
         elif self.inference_executed and self.predicted_action_queue.size() > 0:
             # fetch the predicted action from the predicted action queue
             predicted_action = self.predicted_action_queue.queue.popleft()
             assert predicted_action.size == 4, "Predicted action must have 4 elements"
+            # push the predicted action to the action queue
+            # self.action_obs_queue.push(predicted_action)
             # convert the predicted action to a numpy array of shape (1,4), dtype=np.float32
-            predicted_action = np.array(predicted_action, dtype=np.float32).reshape(1,4)
+            predicted_action = np.array(predicted_action, dtype=np.float32).reshape(1,4).squeeze().tolist()
+            print(f"Predicted action: {predicted_action}")
             predicted_action_msg = Float32MultiArray(data=predicted_action)
             # publish the predicted action
             self.predicted_action_pub.publish(predicted_action_msg)
 
         # the last four elements are the true action
         true_action = data.data[4:]
+        # push the true action to the action queue
+        self.action_obs_queue.push(true_action)
+        print(f"True action: {true_action}")
         true_action_msg = Float32MultiArray(data=true_action)
 
         # publish the messages
@@ -182,7 +192,7 @@ class ActionPredictor:
         self.true_action_pub.publish(true_action_msg)
 
         # if the inference process is enabled, run an inference in a separate thread
-        if self.enable_inference and not self.running_inference:
+        if self.enable_inference and not self.running_inference and self.patient_obs_queue.size() == 100:
             inference_thread = threading.Thread(target=self.run_inference)
             inference_thread.start()
 
