@@ -113,6 +113,10 @@ class ActionPredictor:
         # Initialize the FIFO queue for storing predicted action data
         self.predicted_action_queue = FIFOQueue()
 
+        # create a sliding window for smoothing the predicted actions
+        window_size = 1
+        self.smoothed_action_window = FIFOQueue(max_len=window_size)
+
         # Flags
         self.inference_executed = False
         self.running_inference = False
@@ -173,6 +177,12 @@ class ActionPredictor:
             assert predicted_action.size == 4, "Predicted action must have 4 elements"
             # push the predicted action to the action queue
             # self.action_obs_queue.push(predicted_action)
+
+            # push the predicted action to the smoothed action window
+            self.smoothed_action_window.push(predicted_action)
+            # calculate the mean of the smoothed action window (which acts as the predicted action)
+            predicted_action = np.mean(self.smoothed_action_window.to_numpy(), axis=0)
+
             # convert the predicted action to a numpy array of shape (1,4), dtype=np.float32
             predicted_action = np.array(predicted_action, dtype=np.float32).reshape(1,4).squeeze().tolist()
             print(f"Predicted action: {predicted_action}")
