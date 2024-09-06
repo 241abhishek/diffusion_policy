@@ -7,7 +7,7 @@ name: exo_dyad_lowdim
 dataset_path: ../../data/converted/${task.data_conversion.name}
 
 # Shapes must match the "data" conversion config file
-obs_dim: 8
+obs_dim: 4
 action_dim: 4 
 keypoint_dim: 0
 

@@ -54,7 +54,7 @@ class ActionPredictor:
         rospy.init_node('action_predictor', anonymous=True)
 
         # Parameters
-        self.checkpoint_path = rospy.get_param('checkpoint_path', '/home/cerebro/diff/src/diffusion_policy/data/epoch=0020-val_loss=0.013.ckpt')
+        self.checkpoint_path = rospy.get_param('checkpoint_path', '/home/cerebro/diff/src/diffusion_policy/data/epoch=0030-val_loss=0.018.ckpt')
 
         rospy.set_param('num_inferences', 100)
         rospy.set_param('num_actions_taken', 100)
@@ -108,7 +108,7 @@ class ActionPredictor:
 
         # Initialize the FIFO queue for storing obs data
         self.patient_obs_queue = FIFOQueue(max_len=self.policy.n_obs_steps)
-        self.action_obs_queue = FIFOQueue(max_len=self.policy.n_obs_steps)
+        # self.action_obs_queue = FIFOQueue(max_len=self.policy.n_obs_steps)
 
         # Initialize the FIFO queue for storing predicted action data
         self.predicted_action_queue = FIFOQueue()
@@ -183,7 +183,7 @@ class ActionPredictor:
         # the last four elements are the true action
         true_action = data.data[4:]
         # push the true action to the action queue
-        self.action_obs_queue.push(true_action)
+        # self.action_obs_queue.push(true_action)
         print(f"True action: {true_action}")
         true_action_msg = Float32MultiArray(data=true_action)
 
@@ -225,11 +225,11 @@ class ActionPredictor:
 
             # fetch the observation data from the patient_obs_queue and action_obs_queue
             obs_data = self.patient_obs_queue.to_numpy()
-            action_data = self.action_obs_queue.to_numpy()
+            # action_data = self.action_obs_queue.to_numpy()
 
             # concatenate the observation and action data
-            obs_data = np.concatenate((obs_data, action_data), axis=1)
-            assert obs_data.shape == (100,8) # the shape of the observation data must be (100,8)
+            # obs_data = np.concatenate((obs_data, action_data), axis=1)
+            assert obs_data.shape == (100,4) # the shape of the observation data must be (100,4)
 
             # convert the observation data to a tensor and add a batch dimension
             obs_data = torch.tensor(obs_data, dtype=torch.float32).unsqueeze(0).to(self.device)
