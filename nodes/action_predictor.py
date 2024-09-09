@@ -6,6 +6,7 @@ import geometry_msgs.msg
 import sensor_msgs.msg
 import std_msgs.msg
 import std_srvs.srv
+from diff_policy.msg import X2RobotState
 
 import torch
 import dill

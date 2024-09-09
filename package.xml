@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>diffusion_policy</name>
+  <name>diff_policy</name>
   <version>0.0.1</version>
   <description>Diffusion based action trajectory generation for the X2 exoskeleton</description>
 
@@ -8,6 +8,8 @@
   <license>TODO</license>
 
   <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>message_generation</build_depend>
   <exec_depend>rospy</exec_depend>
+  <exec_depend>message_runtime</exec_depend>
 
 </package>

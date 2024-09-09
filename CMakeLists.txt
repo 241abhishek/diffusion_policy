@@ -1,14 +1,32 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(diffusion_policy)
+project(diff_policy)
 
 find_package(catkin REQUIRED COMPONENTS
   rospy
   # add other required components here
+  std_msgs
+  geometry_msgs
+  sensor_msgs
+  message_generation
 )
 
 catkin_python_setup()
 
-catkin_package()
+add_message_files(
+  FILES
+  X2RobotState.msg
+)
+
+generate_messages(
+  DEPENDENCIES
+  std_msgs
+  geometry_msgs
+  sensor_msgs
+)
+
+catkin_package(
+  CATKIN_DEPENDS message_runtime
+)
 
 catkin_install_python(PROGRAMS
   nodes/action_predictor.py
