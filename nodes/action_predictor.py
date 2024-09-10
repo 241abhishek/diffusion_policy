@@ -63,6 +63,9 @@ class ActionPredictor:
         self.true_action_pub = rospy.Publisher('true_action_topic', Float32MultiArray, queue_size=10)
         self.predicted_action_pub = rospy.Publisher('predicted_action_topic', Float32MultiArray, queue_size=10)
 
+        # publishers for the real robot
+        self.predicted_real_action_pub = rospy.Publisher('/X2_SRA_B/custom_robot_state', X2RobotState, queue_size=10)
+
         # Services
         self.srv_start_inference = rospy.Service('start_inference', std_srvs.srv.Trigger, self.start_inference)
         self.srv_stop_inference = rospy.Service('stop_inference', std_srvs.srv.Trigger, self.stop_inference)
@@ -180,7 +183,7 @@ class ActionPredictor:
         # predicted action messages are interpolated and published at 333 Hz
         self.robot_state_counter += 1
         # only run the inference process every 5 robot state messages
-        if self.robot_state_counter % 5 == 0:
+        if self.robot_state_counter == 5:
             self.robot_state_counter = 0 # reset the robot state counter
             # increment the latency counter
             self.latency_counter += 1
@@ -190,24 +193,29 @@ class ActionPredictor:
                 # remove the first latency_counter rows from the action_prediction_array
                 # this is done to account for the delay in action prediction
                 self.action_prediction_array = self.action_prediction_array[self.latency_counter:]
-                # interpolate between the predicted actions to get the predicted actions at 333 Hz
-                scale_factor = 5 # number of interpolation points
-                x = np.arange(0, self.action_prediction_array.shape[0])
-                x_new = np.linspace(0, self.action_prediction_array.shape[0]-1, scale_factor*self.action_prediction_array.shape[0])
-                # perform interpolation using np.interp for each column of the action_prediction_array
-                interpolated_action_array = np.zeros((scale_factor*self.action_prediction_array.shape[0], 4), dtype=np.float32)
-                for i in range(4): # loop over the columns
-                    interpolated_action_array[:,i] = np.interp(x_new, x, self.action_prediction_array[:,i])
-                # convert the interpolated_action_array to a queue
-                self.predicted_action_queue.from_numpy(interpolated_action_array)
-                self.action_prediction_array = np.empty((0,4), dtype=np.float32) # reset the action_prediction_array
 
+                # uncomment this block to experiment with 333hz action prediction
+                # if self.action_prediction_array.shape[0] != 0:
+                #     # interpolate between the predicted actions to get the predicted actions at 333 Hz
+                #     scale_factor = 5 # number of interpolation points
+                #     x = np.arange(0, self.action_prediction_array.shape[0])
+                #     x_new = np.linspace(0, self.action_prediction_array.shape[0]-1, scale_factor*self.action_prediction_array.shape[0])
+                #     # perform interpolation using np.interp for each column of the action_prediction_array
+                #     interpolated_action_array = np.zeros((scale_factor*self.action_prediction_array.shape[0], 4), dtype=np.float32)
+                #     for i in range(4): # loop over the columns
+                #         interpolated_action_array[:,i] = np.interp(x_new, x, self.action_prediction_array[:,i])
+                #     # convert the interpolated_action_array to a queue
+                #     print(f"Interpolated action array shape: {interpolated_action_array.shape}")
+                #     self.predicted_action_queue.from_numpy(interpolated_action_array)
+
+                self.predicted_action_queue.from_numpy(self.action_prediction_array) # comment this line if the interpolation block is uncommented
+                self.action_prediction_array = np.empty((0,4), dtype=np.float32) # reset the action_prediction_array
                 # reset the latency counter
                 self.latency_counter = 0
 
             # parse the data
             # first four elements are the patient observation
-            patient_obs = [data.joint_state[0], data.joint_state[1], data.joint_state[2], data.joint_state[3]]
+            patient_obs = [data.joint_state.position[0], data.joint_state.position[1], data.joint_state.position[2], data.joint_state.position[3]]
             # convert the patient observation to a numpy array
             patient_obs_np = np.array(patient_obs)
             # push the patient observation to the queue
@@ -218,29 +226,36 @@ class ActionPredictor:
                 inference_thread = threading.Thread(target=self.run_inference)
                 inference_thread.start()
 
-        # interpolate and publish the predicted actions
-        if self.predicted_action_queue.size() > 0:
-            # fetch the predicted action from the predicted action queue
-            predicted_action = self.predicted_action_queue.queue.popleft()
-            assert predicted_action.size == 4, "Predicted action must have 4 elements"
+            # unindent this if snippet to experiment with 333hz action prediction with the interpolation block uncommented
+            # interpolate and publish the predicted actions
+            if self.predicted_action_queue.size() > 0:
+                # fetch the predicted action from the predicted action queue
+                predicted_action = self.predicted_action_queue.queue.popleft()
+                assert predicted_action.size == 4, "Predicted action must have 4 elements"
 
-            # push the predicted action to the smoothed action window
-            self.smoothed_action_window.push(predicted_action)
-            # calculate the mean of the smoothed action window (which acts as the predicted action)
-            predicted_action = np.mean(self.smoothed_action_window.to_numpy(), axis=0)
+                # push the predicted action to the smoothed action window
+                self.smoothed_action_window.push(predicted_action)
+                # calculate the mean of the smoothed action window (which acts as the predicted action)
+                predicted_action = np.mean(self.smoothed_action_window.to_numpy(), axis=0)
 
-            # convert the predicted action to a numpy array of shape (1,4), dtype=np.float64
-            predicted_action = np.array(predicted_action, dtype=np.float64).reshape(1,4).squeeze().tolist()
-            # append a zero to the predicted action to match the size of the joint_state message
-            predicted_action.append(0.0) # this zero represents imu angle which is not used
-            # create a sensor_msgs.JointState message
-            joint_state_msg = sensor_msgs.msg.JointState()
-            joint_state_msg.header.stamp = rospy.Time.now()
-            joint_state_msg.position = predicted_action
-            joint_state_msg.velocity = [0.0, 0.0, 0.0, 0.0] # velocity is not used, set to zero for now
+                # convert the predicted action to a numpy array of shape (1,4), dtype=np.float64
+                predicted_action = np.array(predicted_action, dtype=np.float64).reshape(1,4).squeeze().tolist()
+                # append a zero to the predicted action to match the size of the joint_state message
+                predicted_action.append(0.0) # this zero represents imu angle which is not used
+                # create a sensor_msgs.JointState message
+                joint_state_msg = sensor_msgs.msg.JointState()
+                time_now = rospy.Time.now()
+                joint_state_msg.header.stamp = time_now 
+                joint_state_msg.position = predicted_action
+                joint_state_msg.velocity = [0.0, 0.0, 0.0, 0.0] # velocity is not used, set to zero for now
 
-            # publish the predicted action
-            self.predicted_action_pub.publish(joint_state_msg)
+                # create a custom_robot_state message
+                robot_state_msg = X2RobotState()
+                robot_state_msg.header.stamp = time_now
+                robot_state_msg.joint_state = joint_state_msg
+
+                # publish the predicted action
+                self.predicted_real_action_pub.publish(robot_state_msg)
 
     def start_inference(self, req):
         """Starts the inference process"""

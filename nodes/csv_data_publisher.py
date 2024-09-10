@@ -24,6 +24,8 @@ def csv_publisher():
         rate = rospy.Rate(333.0/decimation_rate)
     else:
         rospy.logerr("Invalid mode specified: must be 'csv_sim' or 'real'")
+        # exit if invalid mode specified
+        return
     
     rospy.on_shutdown(shutdown_hook)
 
