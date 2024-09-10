@@ -12,7 +12,7 @@ def csv_publisher():
     Publishes data from two CSV files line by line, concatenated together to simulate real-time sensor data from two exoskeletons. 
     """
     rospy.init_node('csv_publisher_node', anonymous=True)
-    mode = 'csv_sim' # 'csv_sim' or 'real' (csv_sim for simulation with true action data also available at decimated rate, real for real-time sim of exo)
+    mode = 'real' # 'csv_sim' or 'real' (csv_sim for simulation with true action data also available at decimated rate, real for real-time sim of exo)
 
     if mode == 'csv_sim':
         pub = rospy.Publisher('csv_topic', Float32MultiArray, queue_size=10)

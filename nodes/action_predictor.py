@@ -69,7 +69,10 @@ class ActionPredictor:
         # Services
         self.srv_start_inference = rospy.Service('start_inference', std_srvs.srv.Trigger, self.start_inference)
         self.srv_stop_inference = rospy.Service('stop_inference', std_srvs.srv.Trigger, self.stop_inference)
+        self.srv_start_action = rospy.Service('start_action', std_srvs.srv.Trigger, self.start_action)
+        self.srv_stop_inference = rospy.Service('stop_action', std_srvs.srv.Trigger, self.stop_action)
         self.enable_inference = False
+        self.enable_action = False
 
         # Load checkpoint
         self.payload = torch.load(open(self.checkpoint_path, 'rb'), pickle_module=dill)
@@ -228,7 +231,7 @@ class ActionPredictor:
 
             # unindent this if snippet to experiment with 333hz action prediction with the interpolation block uncommented
             # interpolate and publish the predicted actions
-            if self.predicted_action_queue.size() > 0:
+            if self.predicted_action_queue.size() > 0 and self.enable_action:
                 # fetch the predicted action from the predicted action queue
                 predicted_action = self.predicted_action_queue.queue.popleft()
                 assert predicted_action.size == 4, "Predicted action must have 4 elements"
@@ -268,6 +271,18 @@ class ActionPredictor:
         self.enable_inference = False
         rospy.loginfo("Stopping inference")
         return std_srvs.srv.TriggerResponse(success=True, message="Inference stopped")
+
+    def start_action(self, req):
+        """Starts the action publishing process"""
+        self.enable_action = True
+        rospy.loginfo("Starting action")
+        return std_srvs.srv.TriggerResponse(success=True, message="Action started")
+    
+    def stop_action(self, req):
+        """Stops the action publishing process"""
+        self.enable_action = False
+        rospy.loginfo("Stopping action")
+        return std_srvs.srv.TriggerResponse(success=True, message="Action stopped")
 
     def run_inference(self):
         """Runs the inference process"""
