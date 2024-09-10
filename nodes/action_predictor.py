@@ -110,6 +110,7 @@ class ActionPredictor:
         self.latency_counter = 0 # this counter is used to keep track of the latency of the action prediction
         self.robot_state_counter = 0 # this counter is used to keep track of the robot state messages
         self.action_prediction_array = np.empty((0,4), dtype=np.float32) # this array is used to store the predicted actions
+        self.prev_action = [0.0, 0.0, 0.0, 0.0, 0.0] # this list is used to store the previous action for velocity calculation
 
         # Subscribers
         rospy.Subscriber('csv_topic', Float32MultiArray, self.csv_callback) # for simulation data
@@ -250,7 +251,9 @@ class ActionPredictor:
                 time_now = rospy.Time.now()
                 joint_state_msg.header.stamp = time_now 
                 joint_state_msg.position = predicted_action
-                joint_state_msg.velocity = [0.0, 0.0, 0.0, 0.0] # velocity is not used, set to zero for now
+                # calculate the velocity by subtracting the previous action from the current action
+                joint_state_msg.velocity = [((predicted_action[i] - self.prev_action[i])/(5.0/333)) for i in range(5)]
+                self.prev_action = predicted_action # store the predicted action for velocity calculation
 
                 # create a custom_robot_state message
                 robot_state_msg = X2RobotState()
