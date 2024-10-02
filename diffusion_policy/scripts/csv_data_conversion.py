@@ -37,7 +37,7 @@ def main(config):
         end = start + length
         # initialize the dictionary for the episode
         episode = {
-            "observation": data.iloc[start:end, :].values,
+            "observation": data.iloc[start:end, :cfg.obs_dim].values,
             "action": data.iloc[start:end, 4:].values
         }
 

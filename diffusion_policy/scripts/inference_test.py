@@ -2,7 +2,7 @@
 Script to test inference on a trained model.
 
 Usage:
-python inference_test.py --config-name=train_diffusion_lowdim_workspace
+python3 inference_test.py
 """
 
 import sys
@@ -34,7 +34,8 @@ OmegaConf.register_new_resolver("eval", eval, replace=True)
 def main(cfg: OmegaConf):
 
     # path to the checkpoint (replace with the path to the checkpoint you want to test)
-    checkpoint_path = "/home/cerebro/diff/src/diffusion_policy/data/epoch=0020-val_loss=0.013.ckpt"
+    # checkpoint_path = "/home/cerebro/diff/diffusion_policy/data/epoch=0020-val_loss=0.013.ckpt"
+    checkpoint_path = "/home/abhi2001/Work/diff/241abhishek_diffusion_policy/data/outputs/2024.09.05/20.18.49_train_diffusion_unet_lowdim_exo_dyad_lowdim/checkpoints/epoch=0030-val_loss=0.018.ckpt"
     
     # resolve immediately so all the ${now:} resolvers
     OmegaConf.resolve(cfg)
@@ -109,7 +110,7 @@ def main(cfg: OmegaConf):
     for k in range(num_inf):
         # Create a figure with 4 subplots for tracking the 4 joint positions
         fig, axes = plt.subplots(4, 1, figsize=(10, 10))
-        fig.suptitle(f"Joint Positions Over Time - {k+1}")
+        fig.suptitle(f"Sample Inference")
         # Increase vertical space between subplots
         fig.subplots_adjust(hspace=0.6)
 
@@ -118,41 +119,38 @@ def main(cfg: OmegaConf):
         titles = ["Left Hip", "Left Knee", "Right Hip", "Right Knee"]
         for i, ax in enumerate(axes):
             ax.set_xticks(np.arange(0, prediction_horizon + observation_horizon + 1, 30))
-            ax.set_xticklabels([f'{x/100.0:.1f}' for x in np.arange(0, prediction_horizon + observation_horizon + 1, 30)])
+            ax.set_xticklabels([f'{int(x)}' for x in np.arange(0, prediction_horizon + observation_horizon + 1, 30)])
             if i == 0 or i == 1:
-                ax.set_ylim(np.min(np.concatenate((actual_action_list[k, :, i + 2], predicted_action_list[k, :, i + 2], obs_list[k, :, i], obs_list[k, :, i + 6]))) - 10, 
-                            np.max(np.concatenate((actual_action_list[k, :, i + 2], predicted_action_list[k, :, i + 2], obs_list[k, :, i], obs_list[k, :, i + 6]))) + 10)
+                ax.set_ylim(np.min(np.concatenate((actual_action_list[k, :, i + 2], predicted_action_list[k, :, i + 2], obs_list[k, :, i]))) - 10, 
+                            np.max(np.concatenate((actual_action_list[k, :, i + 2], predicted_action_list[k, :, i + 2], obs_list[k, :, i]))) + 10)
             else:
-                ax.set_ylim(np.min(np.concatenate((actual_action_list[k, :, i - 2], predicted_action_list[k, :, i - 2], obs_list[k, :, i], obs_list[k, :, i + 2]))) - 10, 
-                            np.max(np.concatenate((actual_action_list[k, :, i - 2], predicted_action_list[k, :, i - 2], obs_list[k, :, i], obs_list[k, :, i + 2]))) + 10) 
+                ax.set_ylim(np.min(np.concatenate((actual_action_list[k, :, i - 2], predicted_action_list[k, :, i - 2], obs_list[k, :, i]))) - 10, 
+                            np.max(np.concatenate((actual_action_list[k, :, i - 2], predicted_action_list[k, :, i - 2], obs_list[k, :, i]))) + 10) 
             ax.set_xlabel("Timestep")
             ax.set_ylabel("Joint Position (degrees)")
             ax.set_title(titles[i])
-            line1, = ax.plot([], [], label="Actual Action")
-            line2, = ax.plot([], [], label="Predicted Action")
+            line1, = ax.plot([], [], label="Actual Action (Therapist)")
+            line2, = ax.plot([], [], label="Predicted Action (Therapist)")
             line3, = ax.plot([], [], label="Observation Data (Patient)")
-            line4, = ax.plot([], [], label="Observation Data (Instructor)")
-            lines.append((line1, line2, line3, line4))
+            lines.append((line1, line2, line3))
 
         # loop over the inferences and plot num_inf number of plots
-        for j, (line1, line2, line3, line4) in enumerate(lines):
+        for j, (line1, line2, line3) in enumerate(lines):
             if j == 0 or j == 1:
                 line1.set_data(np.arange(observation_horizon, prediction_horizon + observation_horizon), actual_action_list[k, :, j + 2])
                 line2.set_data(np.arange(observation_horizon, prediction_horizon + observation_horizon), predicted_action_list[k, :, j + 2])
                 line3.set_data(np.arange(observation_horizon), obs_list[k, :, j])
-                line4.set_data(np.arange(observation_horizon), obs_list[k, :, j + 6])
             else:
                 line1.set_data(np.arange(observation_horizon, prediction_horizon + observation_horizon), actual_action_list[k, :, j - 2])
                 line2.set_data(np.arange(observation_horizon, prediction_horizon + observation_horizon), predicted_action_list[k, :, j - 2])
                 line3.set_data(np.arange(observation_horizon), obs_list[k, :, j])
-                line4.set_data(np.arange(observation_horizon), obs_list[k, :, j + 2])
 
         # Create a single legend for the entire figure
-        fig.legend(handles=[line1, line2, line3, line4], 
-            labels=["Actual Action", "Predicted Action", "Observation Data (Patient)", "Observation Data (Instructor)"], 
+        fig.legend(handles=[line1, line2, line3], 
+            labels=["Actual Action (Therapist)", "Predicted Action (Therapist)", "Observation Data (Patient)"], 
             loc="upper right")
 
         # save the plot
-        plt.savefig(f"images/joint_positions_{k+1}.png")
+        plt.savefig(f"images/joint_positions_{k+1}.png", dpi=300)
 if __name__ == "__main__": 
     main()

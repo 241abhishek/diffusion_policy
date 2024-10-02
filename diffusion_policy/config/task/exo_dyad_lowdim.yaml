@@ -4,7 +4,7 @@ defaults:
 
 name: exo_dyad_lowdim
 
-dataset_path: ../../data/converted/${task.data_conversion.name}
+dataset_path: ../data/converted/${task.data_conversion.name}
 
 # Shapes must match the "data" conversion config file
 obs_dim: 4

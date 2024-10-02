@@ -1,4 +1,4 @@
-name: conversion_test
+name: conversion_test_2
 
 csv_file_paths:
   file_1: ../data/synced_data/X2_SRA_A_07-05-2024_10-39-10-mod-sync.csv
