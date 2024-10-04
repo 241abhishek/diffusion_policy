@@ -1,3 +1,155 @@
+# Action Diffusion-based Dyadic Rehabilitation using Exoskeletons
+
+This repository contains a ROS package for dyadic rehabilitation using a diffusion-based action prediction model. It is based on the original [diffusion_policy](https://github.com/real-stanford/diffusion_policy) repository.
+
+## Table of Contents
+
+1. [Setup](#setup)
+2. [Prepare Training and Testing Datasets](#prepare-training-and-testing-datasets)
+3. [Inference](#inference)
+4. [Training](#training)
+5. [ROS Interface](#ros-interface)
+6. [Changelog](#changelog)
+
+## Setup
+
+1. Clone the repository into the `ws/src` directory:
+
+```
+ws
+├── venv  # Python virtual environment for this repo (created by env_setup.bash)
+├── data
+│   └── synced_data  # Contains modified/time-synced training CSV data for training
+└── src
+└── diffusion_policy  # this repo
+```
+
+2. Place the Exoskeleton CSV training data in the `data/synced_data` directory.
+
+3. Navigate to the `ws` directory and create/activate the virtual environment:
+
+```bash
+python3 -m venv venv
+source venv/bin/activate
+```
+
+4. Navigate to the diffusion policy folder and run the environment setup script:
+
+```bash
+./src/diffusion_policy/env_setup.bash
+pip install -e src/diffusion_policy/.
+```
+
+5. Build the ROS workspace:
+
+```bash
+catkin_make
+```
+
+## Troubleshooting
+If you encounter conflicts or issues during the build process:
+- Update conflicting/missing packages to their latest versions.
+- If you face import issues, update the PYTHONPATH:
+
+```bash
+export PYTHONPATH=/ws/venv/lib/python3.8/site-packages:$PYTHONPATH
+# or
+export PYTHONPATH=/ws/src:$PYTHONPATH
+```
+## Prepare Training and Testing Datasets
+
+1. Convert CSV files to Zarr format:
+```
+python3 diffusion_policy/scripts/csv_data_conversion.py --config=diffusion_policy/config/task/data_conversion/conversion_test.yaml
+```
+2. Configuration file: [conversion_test.yaml](diffusion_policy/config/task/data_conversion/conversion_test.yaml) contains options that control the conversion provess. Options include:
+
+    - Input CSV file paths: These must point to the synced CSV files containing exoskeleton joint state data.
+    - Output file path: This is where the converted Zarr format files will be stored.
+    - Episode stats: These denote the start and end positions of each episode in the data.
+    - obs_dim: Dimension of the observation space.
+    - decimation_factor: Defines the downsampling rate for the data. A factor of 5 means that only every 5th value is recorded and used, and others are discarded.
+
+## Inference
+
+1. Edit [inference_test.py](diffusion_policy/scripts/inference_test.py):
+
+    - Replace the `checkpoint_file` variable with the path to your checkpoints file.
+
+2. Run the inference test:
+
+```
+python3 diffusion_policy/scripts/inference_test.py
+```
+This will produce 10 inference samples and generate plots in the "images" folder. These images display model predictions plotted against actual patient-therapist joint trajectories. This script is a good way to visually confirm model performance on the dyadic rehabilitation task.
+
+## Training
+
+1. From the root directory of the repository run the training command:
+
+```
+python3 train.py --config-name=train_exo_diffusion_unet_lowdim_workspace
+```
+
+2. Configuration files that define the model configuration and training parameters:
+
+    - [train_exo_diffusion_unet_lowdim_workspace.yaml](diffusion_policy/config/train_exo_diffusion_unet_lowdim_workspace.yaml)
+    - [exo_dyad_lowdim.yaml](diffusion_policy/config/task/exo_dyad_lowdim.yaml)
+
+3. To resume training from a saved checkpoint, override `hydra.run.dir` with the path to the corresponding run directory.
+
+## ROS Interface
+
+### Nodes
+
+1. [csv_data_publisher](nodes/csv_data_publisher.py): Simulates a virtual rehabilitation session using the test data. Look inside the file for set up options. 
+
+2. [action_predictor](nodes/action_predictor.py): Interfaces with exoskeletons during actual/simulated rehabilitation sessions.
+
+When using the action_predictor node with the actual exoskeletons, run the corresponding [CANOpenRobotController](https://github.com/emekBaris/CANOpenRobotController/tree/master) package nodes for the dyadic rehabilitation setup. The action_predictor node requires joint values from one of the exoskeletons as input to start producing predictions for the virtual-therapist’s exoskeleton.
+
+### Services
+
+The `action_predictor` node provides four services:
+
+  - start_inference
+  - stop_inference
+  - start_action
+  - stop_action
+
+The start_inference and stop_inference service calls are used to tell the model to start/stop producing predictions. The start_action and stop_action service calls are used to control the publication of predicted actions.
+
+# Visualization
+
+Use rqt with the included perspective files from the perspectives directory:
+
+  - [ExoJointStates.perspective](perspectives/ExoJointStates.perspective): For simulations with ground truth data
+  - [RealExoJointStates.perspective](perspectives/RealExoJointStates.perspective): For actual rehabilitation sessions
+
+## Changelog
+
+- [env_setup.bash](env_setup.bash) : Python environment setup script.
+- [package.xml](package.xml): For ROS package configuration.
+- [CMakeLists.txt](CMakeLists.txt): For ROS package configuration.
+- [conversion_test.yaml](diffusion_policy/config/task/data_conversion/conversion_test.yaml): Config file that determines how CSV files are converted into the .zarr format for training.
+- [csv_data_conversion.py](diffusion_policy/scripts/csv_data_conversion.py): A script to convert CSV data to the .zarr format for training.
+- [exo_dyad_lowdim.yaml](diffusion_policy/config/task/exo_dyad_lowdim.yaml): A task specific config file that defines the dataset features for the model.
+- [train_exo_diffusion_unet_lowdim_workspace.yaml](diffusion_policy/config/train_exo_diffusion_unet_lowdim_workspace.yaml): A method specific config file that defines the model configuration and the training run parameters.
+- [exo_dyad_lowdim_dataset.py](diffusion_policy/dataset/exo_dyad_lowdim_dataset.py): A dataset loader for the exo_dyad_lowdim task.
+- [exo_dyad_lowdim_runner.py](diffusion_policy/env_runner/exo_dyad_lowdim_runner.py): An empty environment runner for the exo_dyad_lowdim task.
+- [inference_test.py](diffusion_policy/scripts/inference_test.py): A script to test the performance of a trained model against test data. It produces plots for visual comparison and validation.
+- [csv_data_publisher.py](nodes/csv_data_publisher.py): A ROS node that simulates patient-exoskeleton data for testing purposes.
+- [action_predictor.py](nodes/action_predictor.py): A ROS node that uses a trained model to produce action predictions and executes actions by publishing joint state values.
+- [perspective_files](perspectives): To visualize predictions in real-time using rqt_gui.
+
+### Acknowledgements:
+This repository builds on the following work:
+- [CANOpenRobotController](https://github.com/emekBaris/CANOpenRobotController/tree/master)
+- [ngmor-diffusion_policy](https://github.com/ngmor/diffusion_policy/tree/main) 
+
+
+Below is this repository's original README.
+
 # Diffusion Policy
 
 [[Project page]](https://diffusion-policy.cs.columbia.edu/)

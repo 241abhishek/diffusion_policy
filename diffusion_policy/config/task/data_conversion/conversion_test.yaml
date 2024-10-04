@@ -4,6 +4,7 @@ csv_file_paths:
   file_1: ../data/synced_data/X2_SRA_A_07-05-2024_10-39-10-mod-sync.csv
   file_2: ../data/synced_data/X2_SRA_B_07-05-2024_10-41-46-mod-sync.csv
 
+# Episode stats for the data
 episode_stats:
   start:
     - 164041
@@ -14,7 +15,7 @@ episode_stats:
     - 654139
     - 894640
 
-decimation_factor: 5
-obs_dim: 4
+decimation_factor: 5 # Decimation factor for the data
+obs_dim: 4 # Number of observations in the data
 
 output_path: ../data/converted/${name}
