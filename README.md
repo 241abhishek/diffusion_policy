@@ -46,16 +46,6 @@ pip install -e src/diffusion_policy/.
 catkin_make
 ```
 
-## Troubleshooting
-If you encounter conflicts or issues during the build process:
-- Update conflicting/missing packages to their latest versions.
-- If you face import issues, update the PYTHONPATH:
-
-```bash
-export PYTHONPATH=/ws/venv/lib/python3.8/site-packages:$PYTHONPATH
-# or
-export PYTHONPATH=/ws/src:$PYTHONPATH
-```
 ## Prepare Training and Testing Datasets
 
 1. Convert CSV files to Zarr format:
